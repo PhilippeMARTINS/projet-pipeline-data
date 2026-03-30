@@ -211,4 +211,4 @@ Anglais courant · Portugais bilingue
 
 📧 philippe.martins@hotmail.com  
 🔗 [LinkedIn](https://linkedin.com/in/) ← *(à compléter)*  
-💻 [GitHub](https://github.com/) ← *(à compléter)*
+💻 [GitHub](https://github.com/PhilippeMARTINS)
