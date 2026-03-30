@@ -7,13 +7,14 @@
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?style=flat&logo=sqlite&logoColor=white)
 ![Matplotlib](https://img.shields.io/badge/Matplotlib-3.8-11557C?style=flat)
 ![Seaborn](https://img.shields.io/badge/Seaborn-0.13-4C72B0?style=flat)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.32-FF4B4B?style=flat&logo=streamlit&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=flat)
 
 ---
 
 ## 🇫🇷 Présentation du projet
 
-Ce projet implémente un **pipeline ETL (Extract → Transform → Load → Analyze)** complet sur le dataset public Olist (e-commerce brésilien, ~100 000 commandes).
+Ce projet implémente un **pipeline ETL (Extract → Transform → Load → Analyze)** complet sur le dataset public Olist (e-commerce brésilien, ~100 000 commandes), avec un **dashboard interactif Streamlit** pour explorer les données.
 
 L'objectif : transformer des données brutes multi-fichiers CSV en insights business exploitables, stockés en base SQL et visualisés automatiquement.
 
@@ -26,12 +27,13 @@ Ce projet fait écho à mon expérience chez **Bouygues Telecom** (pôle Big Dat
 - Calcul de KPIs e-commerce métier (CA, délais de livraison, top catégories)
 - Persistance SQL avec SQLite et requêtes analytiques
 - Génération automatique de visualisations avec Matplotlib/Seaborn
+- Dashboard interactif avec filtres dynamiques et console SQL (Streamlit)
 
 ---
 
 ## 🇬🇧 Project Overview
 
-This project implements a full **ETL pipeline (Extract → Transform → Load → Analyze)** on the public Olist dataset (Brazilian e-commerce, ~100,000 orders).
+This project implements a full **ETL pipeline (Extract → Transform → Load → Analyze)** on the public Olist dataset (Brazilian e-commerce, ~100,000 orders), with an **interactive Streamlit dashboard** to explore the data.
 
 The goal: turn raw multi-file CSV data into actionable business insights, stored in a SQL database and automatically visualized.
 
@@ -44,6 +46,7 @@ This project mirrors work done during my 2-year apprenticeship at **Bouygues Tel
 - Business KPI calculation (revenue, delivery time, top categories)
 - SQL persistence with SQLite and analytical queries
 - Automated chart generation with Matplotlib/Seaborn
+- Interactive dashboard with dynamic filters and SQL console (Streamlit)
 
 ---
 
@@ -70,6 +73,7 @@ projet-pipeline-data/
 │   └── delai_livraison.png
 │
 ├── notebooks/                  # Exploratory notebooks
+├── app.py                      # Streamlit dashboard
 ├── main.py                     # Pipeline entry point
 ├── requirements.txt
 └── README.md
@@ -99,6 +103,10 @@ CSV Files (9 sources)
         ▼
   [ ANALYZE ] ──── analyze.py
   Query SQL → Generate charts → Save to outputs/
+        │
+        ▼
+  [ DASHBOARD ] ── app.py
+  Streamlit interactive dashboard
 ```
 
 ---
@@ -119,6 +127,19 @@ CSV Files (9 sources)
 
 ### Distribution des délais de livraison / Delivery Time Distribution
 ![Délai Livraison](outputs/delai_livraison.png)
+
+---
+
+## 🖥️ Dashboard Streamlit
+
+Le dashboard interactif permet d'explorer les données en temps réel :
+
+- **Filtres dynamiques** par année et par catégorie de produits
+- **4 KPIs globaux** : CA total, nombre de commandes, délai moyen, clients uniques
+- **Graphique CA mensuel** filtrable
+- **Top catégories** avec slider pour ajuster le nombre affiché
+- **Distribution des délais** de livraison
+- **Console SQL** : exécute tes propres requêtes sur `orders_master`
 
 ---
 
@@ -156,7 +177,7 @@ LIMIT 10;
 
 ```bash
 # Cloner le dépôt / Clone the repository
-git clone https://github.com/PhilippeMoraisMartins/projet-pipeline-data.git
+git clone https://github.com/PhilippeMARTINS/projet-pipeline-data.git
 cd projet-pipeline-data
 
 # Créer l'environnement virtuel / Create virtual environment
@@ -174,11 +195,13 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Le pipeline va / The pipeline will:
-1. Charger les 9 fichiers CSV depuis `data/raw/`
-2. Nettoyer, joindre et calculer les KPIs
-3. Sauvegarder la table maître dans `data/processed/ecommerce.db`
-4. Générer 3 graphiques dans `outputs/`
+### Lancer le dashboard / Run the dashboard
+
+```bash
+streamlit run app.py
+```
+
+Le dashboard s'ouvre automatiquement sur `http://localhost:8501`
 
 ---
 
@@ -191,6 +214,7 @@ Le pipeline va / The pipeline will:
 | **SQLite** | Stockage relationnel & requêtes analytiques |
 | **Matplotlib 3.8** | Génération de graphiques |
 | **Seaborn 0.13** | Visualisation statistique |
+| **Streamlit 1.32** | Dashboard interactif |
 
 ---
 
