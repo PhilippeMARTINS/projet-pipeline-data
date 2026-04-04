@@ -141,6 +141,13 @@ Le dashboard interactif permet d'explorer les données en temps réel :
 - **Distribution des délais** de livraison
 - **Console SQL** : exécute tes propres requêtes sur `orders_master`
 
+### Aperçu / Preview
+
+![KPIs](outputs/dashboard_kpis.png)
+![CA Mensuel](outputs/dashboard_ca_mensuel.png)
+![Top Catégories](outputs/dashboard_top_categories.png)
+![Console SQL](outputs/dashboard_sql.png)
+
 ---
 
 ## 🧮 SQL Queries — Examples
