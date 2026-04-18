@@ -1,33 +1,23 @@
 # 🛒 E-Commerce Sales Pipeline — Olist Dataset
 
-> **Pipeline ETL complet d'analyse des ventes e-commerce | End-to-end ETL pipeline for e-commerce sales analysis**
-
-![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat&logo=python&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-2.2-150458?style=flat&logo=pandas&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-3-003B57?style=flat&logo=sqlite&logoColor=white)
-![Matplotlib](https://img.shields.io/badge/Matplotlib-3.8-11557C?style=flat)
-![Seaborn](https://img.shields.io/badge/Seaborn-0.13-4C72B0?style=flat)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.32-FF4B4B?style=flat&logo=streamlit&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=flat)
-
 ---
 
 ## 🇫🇷 Présentation du projet
 
 Ce projet implémente un **pipeline ETL (Extract → Transform → Load → Analyze)** complet sur le dataset public Olist (e-commerce brésilien, ~100 000 commandes), avec un **dashboard interactif Streamlit** pour explorer les données.
 
-L'objectif : transformer des données brutes multi-fichiers CSV en insights business exploitables, stockés en base SQL et visualisés automatiquement.
+L'objectif : transformer des données brutes venant multi-fichiers CSV en insights business exploitables, stockés en base SQL et visualisés automatiquement.
 
-Ce projet fait écho à mon expérience chez **Bouygues Telecom** (pôle Big Data), où j'ai travaillé sur l'analyse du parcours client et l'efficacité des canaux marketing — ici appliqués à un contexte e-commerce.
+Il mobilise les compétences en data engineering que j'ai acquises durant mon alternance chez **Bouygues Telecom** (pôle Big Data) : orchestration de pipelines, traitement de données multi-sources et restitution de KPIs métier.
 
 ### Ce que ce projet démontre
 
 - Conception et orchestration d'un pipeline de données modulaire en Python
 - Nettoyage et jointures multi-tables avec Pandas (9 sources hétérogènes)
-- Calcul de KPIs e-commerce métier (CA, délais de livraison, top catégories, ticket moyen, frais de port)
+- Calcul de KPIs e-commerce métier (CA, délais de livraison, top catégories)
 - Persistance SQL avec SQLite et requêtes analytiques
-- Génération automatique de 6 visualisations avec Matplotlib/Seaborn
-- Dashboard interactif avec filtres dynamiques, bouton de réinitialisation et console SQL (Streamlit)
+- Génération automatique de visualisations avec Matplotlib/Seaborn
+- Dashboard interactif avec filtres dynamiques et console SQL (Streamlit)
 
 ---
 
@@ -43,10 +33,10 @@ This project mirrors work done during my 2-year apprenticeship at **Bouygues Tel
 
 - Design and orchestration of a modular data pipeline in Python
 - Multi-table cleaning and joins with Pandas (9 heterogeneous sources)
-- Business KPI calculation (revenue, delivery time, top categories, average basket, freight ratio)
+- Business KPI calculation (revenue, delivery time, top categories)
 - SQL persistence with SQLite and analytical queries
-- Automated generation of 6 charts with Matplotlib/Seaborn
-- Interactive dashboard with dynamic filters, reset button and SQL console (Streamlit)
+- Automated chart generation with Matplotlib/Seaborn
+- Interactive dashboard with dynamic filters and SQL console (Streamlit)
 
 ---
 
@@ -70,10 +60,7 @@ projet-pipeline-data/
 ├── outputs/                    # Generated charts (PNG)
 │   ├── ca_mensuel.png
 │   ├── top_categories.png
-│   ├── delai_livraison.png
-│   ├── boxplot_delais.png
-│   ├── freight_ratio.png
-│   └── ticket_moyen.png
+│   └── delai_livraison.png
 │
 ├── notebooks/                  # Exploratory notebooks
 ├── app.py                      # Streamlit dashboard
@@ -121,8 +108,6 @@ CSV Files (9 sources)
 | **Revenue** | `price + freight_value` par ligne de commande |
 | **Delivery days** | Délai réel achat → livraison client |
 | **Purchase month/year** | Période d'achat pour les analyses temporelles |
-| **Freight ratio** | Part des frais de port dans le CA par catégorie (%) |
-| **Ticket moyen** | Prix moyen par catégorie de produits |
 
 ### Chiffre d'affaires mensuel / Monthly Revenue
 ![CA Mensuel](outputs/ca_mensuel.png)
@@ -133,30 +118,17 @@ CSV Files (9 sources)
 ### Distribution des délais de livraison / Delivery Time Distribution
 ![Délai Livraison](outputs/delai_livraison.png)
 
-### Délais de livraison par catégorie / Delivery Time by Category
-![Boxplot Délais](outputs/boxplot_delais.png)
-
-### Part des frais de port / Freight Ratio by Category
-![Freight Ratio](outputs/freight_ratio.png)
-
-### Ticket moyen par catégorie / Average Basket by Category
-![Ticket Moyen](outputs/ticket_moyen.png)
-
 ---
 
 ## 🖥️ Dashboard Streamlit
 
 Le dashboard interactif permet d'explorer les données en temps réel :
 
-- **Filtres dynamiques** par année et par catégorie de produits (Top 10 CA par défaut)
-- **Bouton de réinitialisation** des filtres en un clic
+- **Filtres dynamiques** par année et par catégorie de produits
 - **4 KPIs globaux** : CA total, nombre de commandes, délai moyen, clients uniques
-- **Graphique CA + volume mensuel** : deux axes pour comparer CA et nombre de commandes
-- **Top catégories** avec slider dynamique et valeurs annotées
-- **Distribution des délais** avec zone livraison rapide, moyenne et médiane
-- **Boxplot délais par catégorie** : distribution complète (Q1, médiane, Q3, outliers)
-- **Part des frais de port** par catégorie avec référence médiane
-- **Ticket moyen** par catégorie avec code couleur au-dessus/en-dessous de la médiane
+- **Graphique CA mensuel** filtrable
+- **Top catégories** avec slider pour ajuster le nombre affiché
+- **Distribution des délais** de livraison
 - **Console SQL** : exécute tes propres requêtes sur `orders_master`
 
 ### Aperçu / Preview

@@ -175,6 +175,154 @@ def plot_delai_livraison() -> None:
     plt.close()
     print("✅ delai_livraison.png sauvegardé")
 
+def plot_freight_ratio() -> None:
+    """Part des frais de port dans le CA par catégorie."""
+    sql = """
+        SELECT product_category_name_english AS categorie,
+               ROUND(AVG(freight_value / revenue) * 100, 1) AS pct_freight,
+               COUNT(*) AS nb_commandes
+        FROM orders_master
+        WHERE revenue > 0
+          AND product_category_name_english IS NOT NULL
+        GROUP BY categorie
+        HAVING nb_commandes >= 10
+        ORDER BY pct_freight DESC
+    """
+    df = query_sqlite(sql)
+
+    seuil = df["pct_freight"].median()
+    colors = ["#DC2626" if v > seuil else "#2563EB" for v in df["pct_freight"]]
+
+    fig, ax = plt.subplots(figsize=(10, max(4, len(df) * 0.45)))
+    bars = ax.barh(df["categorie"][::-1], df["pct_freight"][::-1],
+                   color=colors[::-1], alpha=0.85)
+
+    for bar, val in zip(bars, df["pct_freight"][::-1]):
+        ax.text(
+            bar.get_width() + 0.3,
+            bar.get_y() + bar.get_height() / 2,
+            f"{val}%",
+            va="center", ha="left", fontsize=9,
+            color="#1e3a5f", fontweight="bold",
+        )
+
+    ax.axvline(seuil, color="#D97706", linestyle="--", linewidth=1.5,
+               label=f"Médiane : {seuil:.1f}%")
+    ax.set_xlim(0, df["pct_freight"].max() * 1.2)
+    ax.set_title("Part des frais de port dans le chiffre d'affaires",
+                 fontsize=14, fontweight="bold")
+    ax.set_xlabel("Part des frais de port (%)")
+    ax.legend(fontsize=9)
+    plt.tight_layout()
+    plt.savefig(OUTPUT_PATH / "freight_ratio.png", dpi=150)
+    plt.close()
+    print("✅ freight_ratio.png sauvegardé")
+
+
+def plot_ticket_moyen() -> None:
+    """Ticket moyen par catégorie avec ligne de référence médiane."""
+    sql = """
+        SELECT product_category_name_english AS categorie,
+               ROUND(AVG(price), 2)          AS ticket_moyen,
+               COUNT(*)                      AS nb_commandes
+        FROM orders_master
+        WHERE product_category_name_english IS NOT NULL
+        GROUP BY categorie
+        HAVING nb_commandes >= 10
+        ORDER BY ticket_moyen DESC
+    """
+    df = query_sqlite(sql)
+
+    ticket_median_global = df["ticket_moyen"].median()
+    colors = ["#16A34A" if v >= ticket_median_global else "#2563EB"
+              for v in df["ticket_moyen"]]
+
+    fig, ax = plt.subplots(figsize=(10, max(4, len(df) * 0.45)))
+    bars = ax.barh(df["categorie"][::-1], df["ticket_moyen"][::-1],
+                   color=colors[::-1], alpha=0.85)
+
+    for bar, val in zip(bars, df["ticket_moyen"][::-1]):
+        ax.text(
+            bar.get_width() + 0.5,
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:.0f}€",
+            va="center", ha="left", fontsize=9,
+            color="#1e3a5f", fontweight="bold",
+        )
+
+    ax.axvline(ticket_median_global, color="#D97706", linestyle="--", linewidth=1.5,
+               label=f"Médiane globale : {ticket_median_global:.0f}€")
+    ax.set_xlim(0, df["ticket_moyen"].max() * 1.2)
+    ax.set_title("Ticket moyen par catégorie", fontsize=14, fontweight="bold")
+    ax.set_xlabel("Prix moyen (€)")
+
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor="#16A34A", alpha=0.85, label="Au-dessus de la médiane"),
+        Patch(facecolor="#2563EB", alpha=0.85, label="En-dessous de la médiane"),
+        plt.Line2D([0], [0], color="#D97706", linestyle="--", linewidth=1.5,
+                   label=f"Médiane globale : {ticket_median_global:.0f}€"),
+    ]
+    ax.legend(handles=legend_elements, fontsize=9)
+    plt.tight_layout()
+    plt.savefig(OUTPUT_PATH / "ticket_moyen.png", dpi=150)
+    plt.close()
+    print("✅ ticket_moyen.png sauvegardé")
+
+
+def plot_boxplot_delais() -> None:
+    """Boxplot des délais de livraison par catégorie."""
+    sql = """
+        SELECT product_category_name_english AS categorie,
+               delivery_days
+        FROM orders_master
+        WHERE delivery_days IS NOT NULL
+          AND delivery_days BETWEEN 1 AND 60
+          AND product_category_name_english IS NOT NULL
+    """
+    df = query_sqlite(sql)
+
+    ordre = (
+        df.groupby("categorie")["delivery_days"]
+        .median()
+        .sort_values(ascending=True)
+        .index.tolist()
+    )
+    data_plot = [df[df["categorie"] == cat]["delivery_days"].values
+                 for cat in ordre]
+
+    fig, ax = plt.subplots(figsize=(10, max(4, len(ordre) * 0.5)))
+    ax.boxplot(
+        data_plot,
+        vert=False,
+        patch_artist=True,
+        labels=ordre,
+        medianprops=dict(color="#DC2626", linewidth=2),
+        boxprops=dict(facecolor="#2563EB", alpha=0.4, color="#2563EB"),
+        whiskerprops=dict(color="#2563EB", linewidth=1.5),
+        capprops=dict(color="#2563EB", linewidth=1.5),
+        flierprops=dict(marker="o", color="#93c5fd", alpha=0.2, markersize=2),
+    )
+
+    ax.set_xlim(1, 35)
+    ax.set_title("Délais de livraison par catégorie", fontsize=14, fontweight="bold")
+    ax.set_xlabel("Jours")
+
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor="#2563EB", alpha=0.4, edgecolor="#2563EB",
+              label="50% des commandes (Q1→Q3)"),
+        Line2D([0], [0], color="#DC2626", linewidth=2, label="Médiane"),
+        Line2D([0], [0], color="#2563EB", linewidth=1.5, label="Min / Max (hors outliers)"),
+        Line2D([0], [0], marker="o", color="#93c5fd", linewidth=0,
+               markersize=5, label="Outliers"),
+    ]
+    ax.legend(handles=legend_elements, fontsize=9, loc="lower right")
+    plt.tight_layout()
+    plt.savefig(OUTPUT_PATH / "boxplot_delais.png", dpi=150)
+    plt.close()
+    print("✅ boxplot_delais.png sauvegardé")
 
 def run_analysis() -> None:
     """Lance toutes les visualisations."""
@@ -182,4 +330,7 @@ def run_analysis() -> None:
     plot_ca_mensuel()
     plot_top_categories()
     plot_delai_livraison()
+    plot_freight_ratio()
+    plot_ticket_moyen()
+    plot_boxplot_delais()
     print("✅ Toutes les visualisations sont dans outputs/")
