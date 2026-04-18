@@ -27,7 +27,8 @@ def plot_ca_mensuel() -> None:
     """Chiffre d'affaires mensuel sur toute la période, avec annotations."""
     sql = """
         SELECT purchase_month,
-               ROUND(SUM(revenue), 2) AS ca_mensuel
+            ROUND(SUM(revenue), 2)   AS ca_mensuel,
+            COUNT(DISTINCT order_id) AS nb_commandes
         FROM orders_master
         GROUP BY purchase_month
         ORDER BY purchase_month
@@ -41,6 +42,14 @@ def plot_ca_mensuel() -> None:
             marker="o", color=BLUE, linewidth=2, zorder=3)
     ax.fill_between(range(len(df)), df["ca_mensuel"],
                     alpha=0.1, color=BLUE)
+    
+    # Courbe secondaire
+    ax2 = ax.twinx()
+    ax2.plot(range(len(df)), df["nb_commandes"],
+            marker="s", color=GREEN, linewidth=1.5,
+            linestyle="--", label="Nb commandes", zorder=2)
+    ax2.set_ylabel("Nombre de commandes", color=GREEN)
+    ax2.tick_params(axis="y", labelcolor=GREEN)
 
     # ── Zone de croissance (2017-01 → 2017-11) ────────────────────────────
     idx_debut  = df[df["purchase_month"] == "2017-01"].index
@@ -67,15 +76,28 @@ def plot_ca_mensuel() -> None:
             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=RED, alpha=0.85),
         )
 
+    # ── Axe droit : volume de commandes ──────────────────────────────────
+    ax2 = ax.twinx()
+    ax2.plot(range(len(df)), df["nb_commandes"],
+             marker="s", color=GREEN, linewidth=1.5,
+             linestyle="--", label="Nb commandes", zorder=2)
+    ax2.set_ylabel("Nombre de commandes", color=GREEN)
+    ax2.tick_params(axis="y", labelcolor=GREEN)
+
+    # ── Légende combinée des deux axes ────────────────────────────────────
+    lines1, labels1 = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(lines1 + lines2, labels1 + labels2, fontsize=9, loc="upper left")
+
     ax.set_xticks(range(len(df)))
     ax.set_xticklabels(df["purchase_month"], rotation=45, ha="right", fontsize=8)
     ax.yaxis.set_major_formatter(
         mticker.FuncFormatter(lambda x, _: f"{x/1000:.0f}k€")
     )
-    ax.set_title("Chiffre d'affaires mensuel", fontsize=14, fontweight="bold")
+    ax.set_title("Chiffre d'affaires mensuel + volume de commandes",
+                 fontsize=14, fontweight="bold")
     ax.set_xlabel("Mois")
     ax.set_ylabel("CA (k€)")
-    ax.legend(fontsize=9)
     plt.tight_layout()
     plt.savefig(OUTPUT_PATH / "ca_mensuel.png", dpi=150)
     plt.close()
@@ -187,6 +209,7 @@ def plot_freight_ratio() -> None:
         GROUP BY categorie
         HAVING nb_commandes >= 10
         ORDER BY pct_freight DESC
+        LIMIT 10
     """
     df = query_sqlite(sql)
 
@@ -230,6 +253,7 @@ def plot_ticket_moyen() -> None:
         GROUP BY categorie
         HAVING nb_commandes >= 10
         ORDER BY ticket_moyen DESC
+        LIMIT 10
     """
     df = query_sqlite(sql)
 
@@ -271,15 +295,22 @@ def plot_ticket_moyen() -> None:
 
 
 def plot_boxplot_delais() -> None:
-    """Boxplot des délais de livraison par catégorie."""
     sql = """
-        SELECT product_category_name_english AS categorie,
-               delivery_days
-        FROM orders_master
-        WHERE delivery_days IS NOT NULL
-          AND delivery_days BETWEEN 1 AND 60
-          AND product_category_name_english IS NOT NULL
-    """
+    SELECT product_category_name_english AS categorie,
+           delivery_days
+    FROM orders_master
+    WHERE delivery_days IS NOT NULL
+      AND delivery_days BETWEEN 1 AND 60
+      AND product_category_name_english IS NOT NULL
+      AND product_category_name_english IN (
+          SELECT product_category_name_english
+          FROM orders_master
+          WHERE product_category_name_english IS NOT NULL
+          GROUP BY product_category_name_english
+          ORDER BY COUNT(*) DESC
+          LIMIT 10
+      )
+"""
     df = query_sqlite(sql)
 
     ordre = (
