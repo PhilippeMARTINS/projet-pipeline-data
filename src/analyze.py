@@ -22,6 +22,16 @@ RED     = "#DC2626"
 GREEN   = "#16A34A"
 AMBER   = "#D97706"
 
+# Top 10 catégories par CA — référence commune à tous les graphiques
+TOP10_CAT = """
+    SELECT product_category_name_english
+    FROM orders_master
+    WHERE product_category_name_english IS NOT NULL
+    GROUP BY product_category_name_english
+    ORDER BY SUM(revenue) DESC
+    LIMIT 10
+"""
+
 
 def plot_ca_mensuel() -> None:
     """Chiffre d'affaires mensuel sur toute la période, avec annotations."""
@@ -30,9 +40,10 @@ def plot_ca_mensuel() -> None:
             ROUND(SUM(revenue), 2)   AS ca_mensuel,
             COUNT(DISTINCT order_id) AS nb_commandes
         FROM orders_master
+        WHERE product_category_name_english IN ({TOP10_CAT})
         GROUP BY purchase_month
         ORDER BY purchase_month
-    """
+    """.format(TOP10_CAT=TOP10_CAT)
     df = query_sqlite(sql)
 
     fig, ax = plt.subplots(figsize=(14, 5))
@@ -164,8 +175,9 @@ def plot_delai_livraison() -> None:
         SELECT delivery_days
         FROM orders_master
         WHERE delivery_days IS NOT NULL
-          AND delivery_days BETWEEN 0 AND 60
-    """
+        AND delivery_days BETWEEN 1 AND 60
+        AND product_category_name_english IN ({TOP10_CAT})
+    """.format(TOP10_CAT=TOP10_CAT)
     df = query_sqlite(sql)
 
     moyenne = df["delivery_days"].mean()
@@ -201,16 +213,14 @@ def plot_freight_ratio() -> None:
     """Part des frais de port dans le CA par catégorie."""
     sql = """
         SELECT product_category_name_english AS categorie,
-               ROUND(AVG(freight_value / revenue) * 100, 1) AS pct_freight,
-               COUNT(*) AS nb_commandes
+            ROUND(AVG(freight_value / revenue) * 100, 1) AS pct_freight,
+            COUNT(*) AS nb_commandes
         FROM orders_master
         WHERE revenue > 0
-          AND product_category_name_english IS NOT NULL
+        AND product_category_name_english IN ({TOP10_CAT})
         GROUP BY categorie
-        HAVING nb_commandes >= 10
         ORDER BY pct_freight DESC
-        LIMIT 10
-    """
+    """.format(TOP10_CAT=TOP10_CAT)
     df = query_sqlite(sql)
 
     seuil = df["pct_freight"].median()
@@ -246,15 +256,13 @@ def plot_ticket_moyen() -> None:
     """Ticket moyen par catégorie avec ligne de référence médiane."""
     sql = """
         SELECT product_category_name_english AS categorie,
-               ROUND(AVG(price), 2)          AS ticket_moyen,
-               COUNT(*)                      AS nb_commandes
+            ROUND(AVG(price), 2)          AS ticket_moyen,
+            COUNT(*)                      AS nb_commandes
         FROM orders_master
-        WHERE product_category_name_english IS NOT NULL
+        WHERE product_category_name_english IN ({TOP10_CAT})
         GROUP BY categorie
-        HAVING nb_commandes >= 10
         ORDER BY ticket_moyen DESC
-        LIMIT 10
-    """
+    """.format(TOP10_CAT=TOP10_CAT)
     df = query_sqlite(sql)
 
     ticket_median_global = df["ticket_moyen"].median()
@@ -296,21 +304,13 @@ def plot_ticket_moyen() -> None:
 
 def plot_boxplot_delais() -> None:
     sql = """
-    SELECT product_category_name_english AS categorie,
-           delivery_days
-    FROM orders_master
-    WHERE delivery_days IS NOT NULL
-      AND delivery_days BETWEEN 1 AND 60
-      AND product_category_name_english IS NOT NULL
-      AND product_category_name_english IN (
-          SELECT product_category_name_english
-          FROM orders_master
-          WHERE product_category_name_english IS NOT NULL
-          GROUP BY product_category_name_english
-          ORDER BY COUNT(*) DESC
-          LIMIT 10
-      )
-"""
+        SELECT product_category_name_english AS categorie,
+            delivery_days
+        FROM orders_master
+        WHERE delivery_days IS NOT NULL
+        AND delivery_days BETWEEN 1 AND 60
+        AND product_category_name_english IN ({TOP10_CAT})
+    """.format(TOP10_CAT=TOP10_CAT)
     df = query_sqlite(sql)
 
     ordre = (
