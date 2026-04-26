@@ -355,6 +355,151 @@ def plot_boxplot_delais() -> None:
     plt.close()
     print("✅ boxplot_delais.png sauvegardé")
 
+def plot_statut_commandes() -> None:
+    """Double donut : vue globale + détail des commandes non livrées."""
+    sql = """
+        SELECT 
+            CASE 
+                WHEN order_status = 'delivered'                          THEN 'Livrées'
+                WHEN order_status IN ('shipped', 'processing', 
+                                      'invoiced', 'approved')            THEN 'En cours'
+                WHEN order_status = 'canceled'                           THEN 'Annulées'
+                ELSE 'Indisponibles'
+            END AS statut,
+            COUNT(*) AS nb
+        FROM orders_master
+        GROUP BY statut
+        ORDER BY nb DESC
+    """
+    df = query_sqlite(sql)
+    total = df["nb"].sum()
+
+    fig, (ax_global, ax_detail) = plt.subplots(1, 2, figsize=(14, 7))
+
+    # ── Donut gauche : Global ─────────────────────────────────────────────
+    df_global = df.copy()
+    df_global["groupe"] = df_global["statut"].apply(
+        lambda x: "Livrées" if x == "Livrées" else "Autres"
+    )
+    df_global = df_global.groupby("groupe")["nb"].sum().reset_index()
+    df_global = df_global.sort_values("nb", ascending=False)
+
+    colors_global = {"Livrées": GREEN, "Autres": RED}
+    colors_left = [colors_global[s] for s in df_global["groupe"]]
+
+    wedges1, texts1, autotexts1 = ax_global.pie(
+        df_global["nb"],
+        labels=df_global["groupe"],
+        autopct="%1.1f%%",
+        colors=colors_left,
+        pctdistance=0.75,
+        wedgeprops=dict(width=0.5),
+        startangle=90,
+    )
+    for text in texts1:
+        text.set_fontsize(12)
+    for autotext in autotexts1:
+        autotext.set_fontsize(11)
+        autotext.set_fontweight("bold")
+        autotext.set_color("white")
+
+    ax_global.text(0, 0, f"{total:,}\ncommandes".replace(",", " "),
+                   ha="center", va="center", fontsize=12,
+                   fontweight="bold", color="#1e3a5f")
+    ax_global.set_title("Vue globale", fontsize=13, fontweight="bold", pad=20)
+
+    # ── Donut droit : Détail des "Autres" ─────────────────────────────────
+    df_autres = df[df["statut"] != "Livrées"].copy()
+    total_autres = df_autres["nb"].sum()
+
+    colors_detail = {
+        "En cours":      BLUE,
+        "Annulées":      RED,
+        "Indisponibles": AMBER,
+    }
+    colors_right = [colors_detail[s] for s in df_autres["statut"]]
+
+    wedges2, texts2, autotexts2 = ax_detail.pie(
+        df_autres["nb"],
+        labels=df_autres["statut"],
+        autopct="%1.1f%%",
+        colors=colors_right,
+        pctdistance=0.75,
+        wedgeprops=dict(width=0.5),
+        startangle=90,
+    )
+    for text in texts2:
+        text.set_fontsize(12)
+    for autotext in autotexts2:
+        autotext.set_fontsize(11)
+        autotext.set_fontweight("bold")
+        autotext.set_color("white")
+
+    ax_detail.text(0, 0, f"{total_autres:,}\ncommandes".replace(",", " "),
+                   ha="center", va="center", fontsize=12,
+                   fontweight="bold", color="#1e3a5f")
+    ax_detail.set_title("Détail des commandes non livrées",
+                        fontsize=13, fontweight="bold", pad=20)
+
+    plt.suptitle("Répartition des statuts de commandes",
+                 fontsize=15, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    plt.savefig(OUTPUT_PATH / "statut_commandes.png", dpi=150)
+    plt.close()
+    print("✅ statut_commandes.png sauvegardé")
+
+def plot_satisfaction_categories() -> None:
+    """Score de satisfaction moyen par catégorie (Top 10 CA)."""
+    sql = """
+        SELECT product_category_name_english AS categorie,
+               ROUND(AVG(review_score), 2)   AS score_moyen,
+               COUNT(*)                      AS nb_avis
+        FROM orders_master
+        WHERE review_score IS NOT NULL
+          AND product_category_name_english IN ({TOP10_CAT})
+        GROUP BY categorie
+        HAVING nb_avis >= 10
+        ORDER BY score_moyen DESC
+    """.format(TOP10_CAT=TOP10_CAT)
+    df = query_sqlite(sql)
+
+    score_median = df["score_moyen"].median()
+
+    fig, ax = plt.subplots(figsize=(10, max(4, len(df) * 0.45)))
+    colors = ["#16A34A" if v >= score_median else "#DC2626"
+              for v in df["score_moyen"]]
+    bars = ax.barh(df["categorie"][::-1], df["score_moyen"][::-1],
+                   color=colors[::-1], alpha=0.85)
+
+    for bar, val in zip(bars, df["score_moyen"][::-1]):
+        ax.text(
+            bar.get_width() + 0.02,
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:.2f}",
+            va="center", ha="left", fontsize=9,
+            color="#1e3a5f", fontweight="bold",
+        )
+
+    ax.axvline(score_median, color=AMBER, linestyle="--", linewidth=1.5,
+               label=f"Médiane : {score_median:.2f}")
+    ax.set_xlim(0, 6)
+    ax.set_xlabel("Score moyen (/5)")
+    ax.set_title("Satisfaction client par catégorie",
+                 fontsize=14, fontweight="bold")
+
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=GREEN, alpha=0.85, label="Au-dessus de la médiane"),
+        Patch(facecolor=RED, alpha=0.85, label="En-dessous de la médiane"),
+        plt.Line2D([0], [0], color=AMBER, linestyle="--", linewidth=1.5,
+                   label=f"Médiane : {score_median:.2f}"),
+    ]
+    ax.legend(handles=legend_elements, fontsize=9)
+    plt.tight_layout()
+    plt.savefig(OUTPUT_PATH / "satisfaction_categories.png", dpi=150)
+    plt.close()
+    print("✅ satisfaction_categories.png sauvegardé")
+
 def run_analysis() -> None:
     """Lance toutes les visualisations."""
     print("Génération des visualisations...")
@@ -364,4 +509,6 @@ def run_analysis() -> None:
     plot_freight_ratio()
     plot_ticket_moyen()
     plot_boxplot_delais()
+    plot_statut_commandes()
+    plot_satisfaction_categories()
     print("✅ Toutes les visualisations sont dans outputs/")

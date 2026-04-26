@@ -191,42 +191,44 @@ LIMIT 10;
 
 ---
 
-## 🚀 Installation & Usage
+## 🚀 Installation & Lancement / Getting Started
 
 ### Prérequis / Prerequisites
-
 - Python 3.11+
+- pip
 - [Dataset Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — placer les CSV dans `data/raw/`
 
-### Setup
+### Étapes / Steps
 
+1. Cloner le dépôt / Clone the repository
 ```bash
-# Cloner le dépôt / Clone the repository
 git clone https://github.com/PhilippeMARTINS/projet-pipeline-data.git
 cd projet-pipeline-data
+```
 
-# Créer l'environnement virtuel / Create virtual environment
+2. Créer et activer l'environnement virtuel / Create and activate virtual environment
+```bash
 python -m venv venv
-source venv/bin/activate      # Linux / Mac
-venv\Scripts\activate         # Windows
+```
+```bash
+# Windows
+venv\Scripts\activate
+# Mac/Linux
+source venv/bin/activate
+```
 
-# Installer les dépendances / Install dependencies
+3. Installer les dépendances / Install dependencies
+```bash
 pip install -r requirements.txt
 ```
 
-### Lancer le pipeline / Run the full pipeline
-
-```bash
-python main.py
-```
-
-### Lancer le dashboard / Run the dashboard
-
+4. Lancer l'application / Run the application
 ```bash
 streamlit run app.py
 ```
 
-Le dashboard s'ouvre automatiquement sur `http://localhost:8501`
+> ⚠️ Ne jamais copier le dossier `venv/` d'un PC à l'autre — toujours le recréer localement.
+> Never copy the `venv/` folder from one PC to another — always recreate it locally.
 
 ---
 

@@ -34,7 +34,7 @@ def clean_orders(orders: pd.DataFrame) -> pd.DataFrame:
 def build_master_table(datasets: dict) -> pd.DataFrame:
     """
     Construit la table principale en joignant :
-    orders + order_items + products + customers + category_translation
+    orders + order_items + products + customers + category_translation + reviews
 
     Returns:
         pd.DataFrame: Table maître enrichie
@@ -44,6 +44,7 @@ def build_master_table(datasets: dict) -> pd.DataFrame:
     products = datasets["products"]
     customers = datasets["customers"]
     translation = datasets["category_translation"]
+    reviews = datasets["reviews"]
 
     # Jointure orders + items
     df = orders.merge(items, on="order_id", how="inner")
@@ -56,6 +57,16 @@ def build_master_table(datasets: dict) -> pd.DataFrame:
 
     # Jointure avec customers
     df = df.merge(customers, on="customer_id", how="left")
+
+    # Jointure avec reviews — on garde uniquement le score moyen par commande
+    reviews_clean = (
+        reviews[["order_id", "review_score"]]
+        .groupby("order_id")["review_score"]
+        .mean()
+        .apply(lambda x: round(x * 2) / 2)  # Arrondi au 0.5 le plus proche
+        .reset_index()
+    )
+    df = df.merge(reviews_clean, on="order_id", how="left")
 
     print(f"✅ Table maître construite — {df.shape[0]} lignes, {df.shape[1]} colonnes")
     return df
