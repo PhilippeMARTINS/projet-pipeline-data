@@ -3,18 +3,20 @@ main.py
 -------
 Point d'entrée du pipeline ETL.
 """
-
 from src.extract import load_all_datasets
 from src.transform import run_transformations
 from src.load import save_to_sqlite, query_sqlite
 from src.analyze import run_analysis
+from src.validate import validate_raw_data, validate_master_table
 
 if __name__ == "__main__":
     print("=== EXTRACTION ===")
     datasets = load_all_datasets()
+    validate_raw_data(datasets)
 
     print("\n=== TRANSFORMATION ===")
     df = run_transformations(datasets)
+    validate_master_table(df)
 
     print("\n=== CHARGEMENT SQL ===")
     save_to_sqlite(df)
