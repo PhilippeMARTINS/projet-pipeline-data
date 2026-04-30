@@ -1,0 +1,62 @@
+02:18:57 [INFO] ==================================================
+02:18:57 [INFO]   PIPELINE ETL — E-COMMERCE OLIST
+02:18:57 [INFO] ==================================================
+02:18:57 [INFO] ÉTAPE 1 — EXTRACTION
+02:18:57 [INFO] Chargement des datasets Olist depuis 'data\raw'
+02:18:57 [INFO]   orders                    : 99441 lignes, 8 colonnes
+02:18:57 [INFO]   order_items               : 112650 lignes, 7 colonnes
+02:18:57 [INFO]   products                  : 32951 lignes, 9 colonnes
+02:18:57 [INFO]   customers                 : 99441 lignes, 5 colonnes
+02:18:57 [INFO]   sellers                   : 3095 lignes, 4 colonnes
+02:18:57 [INFO]   payments                  : 103886 lignes, 5 colonnes
+02:18:58 [INFO]   reviews                   : 99224 lignes, 7 colonnes
+02:18:58 [INFO]   geolocation               : 1000163 lignes, 5 colonnes
+02:18:58 [INFO]   category_translation      : 71 lignes, 2 colonnes
+02:18:58 [INFO] 9 datasets chargés avec succès
+02:18:58 [INFO] ÉTAPE 2 — VALIDATION DONNÉES BRUTES
+02:18:58 [INFO] Validation des données brutes :
+02:18:58 [INFO]   [orders]
+02:18:58 [INFO]     [OK] order_id sans valeurs nulles
+02:18:58 [INFO]     [OK] customer_id sans valeurs nulles
+02:18:58 [INFO]     [OK] order_status dans les valeurs attendues
+02:18:58 [INFO]     [OK] order_purchase_timestamp sans valeurs nulles
+02:18:58 [INFO]   [order_items]
+02:18:58 [INFO]     [OK] order_id sans valeurs nulles
+02:18:58 [INFO]     [OK] product_id sans valeurs nulles
+02:18:58 [INFO]     [OK] price entre 0 et 10 000
+02:18:58 [INFO]     [OK] freight_value entre 0 et 1 000
+02:18:58 [INFO]   [reviews]
+02:18:58 [INFO]     [OK] order_id sans valeurs nulles
+02:18:58 [INFO]     [OK] review_score entre 1 et 5 (tolerance 5% nulls)
+02:18:58 [INFO] Validation donnees brutes : toutes les verifications sont passees [OK]
+02:18:58 [INFO] ÉTAPE 3 — TRANSFORMATION
+02:18:58 [INFO] ÉTAPE 4 — VALIDATION TABLE MAÎTRE
+02:18:58 [INFO] Validation de la table maitre :
+02:18:58 [INFO]     [OK] colonne 'order_id' presente
+02:18:58 [INFO]     [OK] colonne 'customer_id' presente
+02:18:58 [INFO]     [OK] colonne 'product_id' presente
+02:18:58 [INFO]     [OK] colonne 'price' presente
+02:18:58 [INFO]     [OK] colonne 'freight_value' presente
+02:18:58 [INFO]     [OK] colonne 'revenue' presente
+02:18:58 [INFO]     [OK] colonne 'delivery_days' presente
+02:18:58 [INFO]     [OK] colonne 'purchase_month' presente
+02:18:58 [INFO]     [OK] colonne 'purchase_year' presente
+02:18:58 [INFO]     [OK] colonne 'product_category_name_english' presente
+02:18:58 [INFO]     [OK] revenue positif
+02:18:58 [INFO]     [OK] delivery_days positif ou nul
+02:18:59 [INFO]     [OK] aucune ligne dupliquee
+02:18:59 [INFO] Validation table maitre : toutes les verifications sont passees [OK]
+02:18:59 [INFO] ÉTAPE 5 — CHARGEMENT SQL
+02:19:00 [INFO] 112650 lignes sauvegardées dans la table 'orders_master' (data\processed\ecommerce.db)
+02:19:00 [INFO] ÉTAPE 6 — TEST REQUÊTE SQL
+02:19:00 [INFO] Résultat requête :
+   purchase_year  nb_commandes  chiffre_affaires
+0           2016           312          57183.21
+1           2017         44579        7142672.43
+2           2018         53775        8643697.60
+02:19:00 [INFO] ÉTAPE 7 — ANALYSE & VISUALISATION
+02:19:00 [INFO] Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+02:19:00 [INFO] Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+02:19:02 [INFO] ==================================================
+02:19:02 [INFO] PIPELINE TERMINÉ
+02:19:02 [INFO] ==================================================

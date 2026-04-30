@@ -11,7 +11,7 @@ import pytest
 from src.transform import clean_orders, build_master_table, compute_kpis
 
 
-# ── Fixtures : mini-datasets réutilisables ─────────────────────────────────────
+# ── Fixtures : mini-datasets réutilisables ────────────────────────────────────
 
 @pytest.fixture
 def sample_orders():
@@ -32,9 +32,9 @@ def sample_orders():
 def sample_datasets(sample_orders):
     """
     Ensemble minimal de datasets pour tester build_master_table et compute_kpis.
+    Simule le nettoyage déjà effectué par clean_orders().
     """
     orders = sample_orders.copy()
-    # Simulation du nettoyage déjà effectué (dates converties, NaT supprimé)
     date_cols = [
         "order_purchase_timestamp",
         "order_approved_at",
@@ -47,9 +47,9 @@ def sample_datasets(sample_orders):
     orders = orders.dropna(subset=["order_purchase_timestamp"])
 
     order_items = pd.DataFrame({
-        "order_id":    ["o1", "o1", "o3"],
-        "product_id":  ["p1", "p2", "p1"],
-        "price":       [100.0, 50.0, 80.0],
+        "order_id":      ["o1", "o1", "o3"],
+        "product_id":    ["p1", "p2", "p1"],
+        "price":         [100.0, 50.0, 80.0],
         "freight_value": [10.0, 5.0, 8.0],
     })
 
@@ -61,7 +61,7 @@ def sample_datasets(sample_orders):
     customers = pd.DataFrame({
         "customer_id":        ["c1", "c3"],
         "customer_unique_id": ["u1", "u3"],
-        "customer_city":      ["São Paulo", "Rio de Janeiro"],
+        "customer_city":      ["Sao Paulo", "Rio de Janeiro"],
         "customer_state":     ["SP", "RJ"],
     })
 
@@ -70,23 +70,31 @@ def sample_datasets(sample_orders):
         "product_category_name_english": ["electronics", "health_beauty"],
     })
 
+    # Table reviews minimale — manquait dans la version originale
+    reviews = pd.DataFrame({
+        "order_id":     ["o1", "o3"],
+        "review_score": [5, 4],
+        "review_id":    ["r1", "r2"],
+    })
+
     return {
         "orders":               orders,
         "order_items":          order_items,
         "products":             products,
         "customers":            customers,
         "category_translation": translation,
+        "reviews":              reviews,
     }
 
 
-# ── Tests : clean_orders ───────────────────────────────────────────────────────
+# ── Tests : clean_orders ──────────────────────────────────────────────────────
 
 class TestCleanOrders:
 
     def test_supprime_lignes_sans_date_achat(self, sample_orders):
         """Une ligne avec order_purchase_timestamp=None doit être supprimée."""
         result = clean_orders(sample_orders)
-        assert len(result) == 2, "La ligne sans date d'achat aurait dû être supprimée"
+        assert len(result) == 2, "La ligne sans date d'achat aurait du etre supprimee"
 
     def test_dates_converties_en_datetime(self, sample_orders):
         """Toutes les colonnes de dates doivent être de type datetime64."""
@@ -100,7 +108,7 @@ class TestCleanOrders:
         ]
         for col in date_cols:
             assert pd.api.types.is_datetime64_any_dtype(result[col]), \
-                f"La colonne {col} devrait être datetime64"
+                f"La colonne {col} devrait etre datetime64"
 
     def test_retourne_dataframe(self, sample_orders):
         """clean_orders doit retourner un DataFrame."""
@@ -113,11 +121,12 @@ class TestCleanOrders:
         assert result["order_purchase_timestamp"].isna().sum() == 0
 
 
-# ── Tests : build_master_table ─────────────────────────────────────────────────
+# ── Tests : build_master_table ────────────────────────────────────────────────
 
 class TestBuildMasterTable:
 
     def test_retourne_dataframe(self, sample_datasets):
+        """build_master_table doit retourner un DataFrame."""
         result = build_master_table(sample_datasets)
         assert isinstance(result, pd.DataFrame)
 
@@ -134,11 +143,11 @@ class TestBuildMasterTable:
 
     def test_nombre_lignes_coherent(self, sample_datasets):
         """
-        La jointure orders × order_items doit donner autant de lignes
+        La jointure orders x order_items doit donner autant de lignes
         qu'il y a d'items pour les orders valides.
+        o1 a 2 items, o3 a 1 item -> 3 lignes attendues.
         """
         result = build_master_table(sample_datasets)
-        # o1 a 2 items, o3 a 1 item → 3 lignes attendues
         assert len(result) == 3
 
     def test_traduction_categorie_appliquee(self, sample_datasets):
@@ -147,13 +156,13 @@ class TestBuildMasterTable:
         assert "electronics" in result["product_category_name_english"].values
 
 
-# ── Tests : compute_kpis ───────────────────────────────────────────────────────
+# ── Tests : compute_kpis ─────────────────────────────────────────────────────
 
 class TestComputeKpis:
 
     @pytest.fixture
     def master_df(self, sample_datasets):
-        """Table maître prête pour compute_kpis."""
+        """Table maitre prete pour compute_kpis."""
         return build_master_table(sample_datasets)
 
     def test_colonne_revenue_creee(self, master_df):
@@ -180,13 +189,13 @@ class TestComputeKpis:
         """Les délais de livraison valides doivent être positifs ou nuls."""
         result = compute_kpis(master_df)
         valides = result["delivery_days"].dropna()
-        assert (valides >= 0).all(), "Des délais négatifs ont été détectés"
+        assert (valides >= 0).all(), "Des delais negatifs ont ete detectes"
 
     def test_purchase_month_type_period(self, master_df):
-        """purchase_month doit être de type Period (fréquence mensuelle)."""
+        """purchase_month doit être de type Period (frequence mensuelle)."""
         result = compute_kpis(master_df)
         assert hasattr(result["purchase_month"].dtype, "freq"), \
-            "purchase_month devrait être un PeriodIndex mensuel"
+            "purchase_month devrait etre un PeriodIndex mensuel"
 
     def test_purchase_year_type_entier(self, master_df):
         """purchase_year doit contenir des entiers."""
@@ -194,8 +203,8 @@ class TestComputeKpis:
         assert pd.api.types.is_integer_dtype(result["purchase_year"])
 
     def test_valeurs_purchase_year_coherentes(self, master_df):
-        """Les années doivent être dans la plage du dataset Olist (2016-2018)."""
+        """Les annees doivent etre dans la plage du dataset Olist (2016-2018)."""
         result = compute_kpis(master_df)
         annees = result["purchase_year"].dropna().unique()
         for annee in annees:
-            assert 2016 <= annee <= 2019, f"Année inattendue : {annee}"
+            assert 2016 <= annee <= 2019, f"Annee inattendue : {annee}"
