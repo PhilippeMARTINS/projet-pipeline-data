@@ -1,7 +1,32 @@
+# Environnement virtuel
 venv/
+ 
+# Données brutes (trop lourdes pour GitHub)
 data/raw/
+ 
+# Données transformées (fichiers générés)
+data/processed/
+ 
+# Base de données SQLite
+*.db
+ 
+# Fichiers Python compilés
 *.pyc
 __pycache__/
+ 
+# Variables d'environnement
 .env
-*.db
+ 
+# Logs
+pipeline.log
+*.log
+ 
+# Jupyter
 .ipynb_checkpoints/
+ 
+# Outputs générés (graphiques)
+outputs/
+ 
+# OS
+.DS_Store
+Thumbs.db
