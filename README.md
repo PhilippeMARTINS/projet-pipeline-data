@@ -8,6 +8,7 @@
 ![Matplotlib](https://img.shields.io/badge/Matplotlib-3.8-11557C?style=flat)
 ![Seaborn](https://img.shields.io/badge/Seaborn-0.13-4C72B0?style=flat)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.32-FF4B4B?style=flat&logo=streamlit&logoColor=white)
+![Tests](https://github.com/PhilippeMARTINS/projet-pipeline-data/actions/workflows/tests.yml/badge.svg)
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=flat)
 
 ---
@@ -25,9 +26,11 @@ Ce projet fait écho à mon expérience chez **Bouygues Telecom** (pôle Big Dat
 - Conception et orchestration d'un pipeline de données modulaire en Python
 - Nettoyage et jointures multi-tables avec Pandas (9 sources hétérogènes)
 - Calcul de KPIs e-commerce métier (CA, délais de livraison, top catégories, ticket moyen, frais de port)
+- Validation automatique de la qualité des données à chaque étape (`validate.py`)
 - Persistance SQL avec SQLite et requêtes analytiques
 - Génération automatique de 6 visualisations avec Matplotlib/Seaborn
 - Dashboard interactif avec filtres dynamiques, bouton de réinitialisation et console SQL (Streamlit)
+- Suite de tests unitaires (15 tests pytest)
 
 ---
 
@@ -44,9 +47,11 @@ This project mirrors work done during my 2-year apprenticeship at **Bouygues Tel
 - Design and orchestration of a modular data pipeline in Python
 - Multi-table cleaning and joins with Pandas (9 heterogeneous sources)
 - Business KPI calculation (revenue, delivery time, top categories, average basket, freight ratio)
+- Automatic data quality validation at each step (`validate.py`)
 - SQL persistence with SQLite and analytical queries
 - Automated generation of 6 charts with Matplotlib/Seaborn
 - Interactive dashboard with dynamic filters, reset button and SQL console (Streamlit)
+- Unit test suite (15 pytest tests)
 
 ---
 
@@ -55,30 +60,32 @@ This project mirrors work done during my 2-year apprenticeship at **Bouygues Tel
 ```
 projet-pipeline-data/
 │
-├── data/
-│   ├── raw/                    # Source CSV files (Olist dataset)
-│   └── processed/
-│       └── ecommerce.db        # SQLite database (output)
-│
 ├── src/
-│   ├── __init__.py
-│   ├── extract.py              # Load all CSV files into DataFrames
-│   ├── transform.py            # Clean, join, compute KPIs
-│   ├── load.py                 # Save to SQLite / run SQL queries
-│   └── analyze.py              # Generate visualizations
+│   ├── extract.py              # Chargement des 9 CSV Olist
+│   ├── transform.py            # Nettoyage, jointures, calcul KPIs
+│   ├── load.py                 # Sauvegarde SQLite & requêtes SQL
+│   ├── analyze.py              # Génération des visualisations
+│   └── validate.py             # Validation qualité des données
 │
-├── outputs/                    # Generated charts (PNG)
-│   ├── ca_mensuel.png
-│   ├── top_categories.png
-│   ├── delai_livraison.png
-│   ├── boxplot_delais.png
-│   ├── freight_ratio.png
-│   └── ticket_moyen.png
+├── tests/
+│   └── test_transform.py       # 15 tests unitaires pytest
 │
-├── notebooks/                  # Exploratory notebooks
-├── app.py                      # Streamlit dashboard
-├── main.py                     # Pipeline entry point
+├── data/
+│   ├── raw/                    # CSV Olist (non commité — voir section Données)
+│   └── processed/
+│       └── ecommerce.db        # Base SQLite générée
+│
+├── outputs/                    # Graphiques générés (PNG)
+│
+├── .github/
+│   └── workflows/
+│       └── tests.yml           # CI/CD GitHub Actions
+│
+├── app.py                      # Dashboard Streamlit
+├── main.py                     # Point d'entrée du pipeline
+├── Makefile                    # Commandes raccourcies
 ├── requirements.txt
+├── .env.example
 └── README.md
 ```
 
@@ -87,91 +94,120 @@ projet-pipeline-data/
 ## ⚙️ Pipeline Architecture
 
 ```
-CSV Files (9 sources)
+CSV Files (9 sources Olist)
         │
         ▼
-  [ EXTRACT ]  ──── extract.py
-  Load all datasets into Pandas DataFrames
+  [ EXTRACT ]   ──── extract.py
+  Chargement de tous les datasets en DataFrames Pandas
         │
         ▼
-  [ TRANSFORM ] ─── transform.py
-  • Clean dates & nulls
-  • Join: orders + items + products + customers + categories
-  • Compute KPIs: revenue, delivery_days, purchase_month/year
+  [ VALIDATE ]  ──── validate.py
+  Vérification qualité des données brutes
         │
         ▼
-  [ LOAD ] ─────── load.py
-  Save master table to SQLite (orders_master)
+  [ TRANSFORM ] ──── transform.py
+  • Nettoyage des dates et valeurs nulles
+  • Jointure : orders + items + products + customers + categories
+  • Calcul des KPIs : revenue, delivery_days, purchase_month/year
         │
         ▼
-  [ ANALYZE ] ──── analyze.py
-  Query SQL → Generate charts → Save to outputs/
+  [ VALIDATE ]  ──── validate.py
+  Vérification de la table maître
         │
         ▼
-  [ DASHBOARD ] ── app.py
-  Streamlit interactive dashboard
+  [ LOAD ]      ──── load.py
+  Sauvegarde dans SQLite (table orders_master)
+        │
+        ▼
+  [ ANALYZE ]   ──── analyze.py
+  Requêtes SQL → 6 graphiques → outputs/
+        │
+        ▼
+  [ DASHBOARD ] ──── app.py
+  Streamlit · Filtres dynamiques · Console SQL
 ```
 
 ---
 
-## 📊 KPIs & Visualisations / Visualizations
+## 📦 Données / Dataset
 
-| KPI | Description |
-|-----|-------------|
-| **Revenue** | `price + freight_value` par ligne de commande |
-| **Delivery days** | Délai réel achat → livraison client |
-| **Purchase month/year** | Période d'achat pour les analyses temporelles |
-| **Freight ratio** | Part des frais de port dans le CA par catégorie (%) |
-| **Ticket moyen** | Prix moyen par catégorie de produits |
+**Source** : [Olist Brazilian E-Commerce Public Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — Kaggle  
+**Volume** : ~100 000 commandes | 9 tables relationnelles | 2016–2018
 
-### Chiffre d'affaires mensuel / Monthly Revenue
-![CA Mensuel](outputs/ca_mensuel.png)
+| Fichier | Description | Lignes |
+|---------|-------------|--------|
+| `olist_orders_dataset.csv` | Commandes | 99 441 |
+| `olist_order_items_dataset.csv` | Lignes de commande | 112 650 |
+| `olist_products_dataset.csv` | Produits | 32 951 |
+| `olist_customers_dataset.csv` | Clients | 99 441 |
+| `olist_sellers_dataset.csv` | Vendeurs | 3 095 |
+| `olist_order_payments_dataset.csv` | Paiements | 103 886 |
+| `olist_order_reviews_dataset.csv` | Avis | 99 224 |
+| `olist_geolocation_dataset.csv` | Géolocalisation | 1 000 163 |
+| `product_category_name_translation.csv` | Traductions catégories | 71 |
 
-### Top 10 catégories de produits / Top 10 Product Categories
-![Top Catégories](outputs/top_categories.png)
-
-### Distribution des délais de livraison / Delivery Time Distribution
-![Délai Livraison](outputs/delai_livraison.png)
-
-### Délais de livraison par catégorie / Delivery Time by Category
-![Boxplot Délais](outputs/boxplot_delais.png)
-
-### Part des frais de port / Freight Ratio by Category
-![Freight Ratio](outputs/freight_ratio.png)
-
-### Ticket moyen par catégorie / Average Basket by Category
-![Ticket Moyen](outputs/ticket_moyen.png)
+> ⚠️ Les fichiers CSV bruts sont exclus du dépôt (`.gitignore`).
+> Les télécharger depuis Kaggle et les placer dans `data/raw/`.
 
 ---
 
-## 🖥️ Dashboard Streamlit
+## 📊 Visualisations — Aperçu du dashboard
 
-Le dashboard interactif permet d'explorer les données en temps réel :
+Le dashboard contient **9 graphiques interactifs** (Plotly) + une console SQL :
 
-- **Filtres dynamiques** par année et par catégorie de produits (Top 10 CA par défaut)
-- **Bouton de réinitialisation** des filtres en un clic
-- **4 KPIs globaux** : CA total, nombre de commandes, délai moyen, clients uniques
-- **Graphique CA + volume mensuel** : deux axes pour comparer CA et nombre de commandes
-- **Top catégories** avec slider dynamique et valeurs annotées
-- **Distribution des délais** avec zone livraison rapide, moyenne et médiane
-- **Boxplot délais par catégorie** : distribution complète (Q1, médiane, Q3, outliers)
-- **Part des frais de port** par catégorie avec référence médiane
-- **Ticket moyen** par catégorie avec code couleur au-dessus/en-dessous de la médiane
-- **Console SQL** : exécute tes propres requêtes sur `orders_master`
+| # | Titre | Description |
+|---|-------|-------------|
+| 1 | 📈 Chiffre d'affaires mensuel + volume de commandes | Double axe CA/commandes, annotation pic Black Friday, zone de croissance |
+| 2 | 🏆 Top catégories par chiffre d'affaires | Barres horizontales, code couleur médiane, slider dynamique |
+| 3 | 🚚 Distribution des délais de livraison | Histogramme avec zone livraison rapide, médiane et moyenne |
+| 4 | 📦 Délais de livraison par catégorie | Boxplot (Q1, médiane, Q3, outliers) par catégorie |
+| 5 | 💸 Part des frais de port dans le CA | Ratio freight/CA (%) avec ligne médiane de référence |
+| 6 | 🧾 Ticket moyen par catégorie | Prix moyen avec code couleur au-dessus/en-dessous de la médiane |
+| 7 | 📦 Statut des commandes | Double donut : vue globale (livrées vs autres) + détail non livrées |
+| 8 | ⭐ Satisfaction client par catégorie | Score moyen des avis (/5) avec ligne médiane |
+| 9 | 🗺️ Répartition géographique des commandes | Carte choroplèthe du Brésil par état (commandes, CA ou satisfaction) |
+| — | 🧮 Requête SQL personnalisée | Console SQL pour interroger directement `orders_master` |
 
-### Aperçu / Preview
-
-![KPIs](outputs/dashboard_kpis.png)
+### 📈 Chiffre d'affaires mensuel
+Analyse temporelle du CA avec annotation du pic Black Friday (novembre 2017).
 ![CA Mensuel](outputs/dashboard_ca_mensuel.png)
-![Top Catégories](outputs/dashboard_top_categories.png)
-![Console SQL](outputs/dashboard_sql.png)
+
+### 🗺️ Répartition géographique
+Carte choroplèthe interactive du Brésil — commandes, CA ou satisfaction par état.
+![Carte](outputs/dashboard_carte.png)
+
+### ⭐ Satisfaction client par catégorie
+Croisement des données commandes + avis pour identifier les catégories à améliorer.
+![Satisfaction](outputs/dashboard_satisfaction.png)
+
+### 📦 Statut des commandes
+Double donut : vue globale (livrées vs autres) et détail des commandes non livrées.
+![Statut](outputs/dashboard_statut_commandes.png)
 
 ---
 
-## 🧮 SQL Queries — Examples
+## 🧪 Tests / Testing
+
+```bash
+python -m pytest tests/ -v
+```
+
+```
+tests/test_transform.py::TestCleanOrders::test_supprime_lignes_sans_date_achat  PASSED
+tests/test_transform.py::TestCleanOrders::test_dates_converties_en_datetime     PASSED
+tests/test_transform.py::TestBuildMasterTable::test_retourne_dataframe           PASSED
+tests/test_transform.py::TestBuildMasterTable::test_colonnes_essentielles        PASSED
+tests/test_transform.py::TestComputeKpis::test_colonne_revenue_creee            PASSED
+...
+15 passed in 0.41s
+```
+
+---
+
+## 🧮 SQL Queries — Exemples / Examples
 
 ```sql
--- Chiffre d'affaires par année / Revenue by year
+-- Chiffre d'affaires par année
 SELECT purchase_year,
        COUNT(DISTINCT order_id) AS nb_commandes,
        ROUND(SUM(revenue), 2)   AS chiffre_affaires
@@ -179,13 +215,13 @@ FROM orders_master
 GROUP BY purchase_year
 ORDER BY purchase_year;
 
--- Top 10 catégories / Top 10 categories
-SELECT product_category_name_english AS category,
-       ROUND(SUM(revenue), 2) AS revenue
+-- Top 10 catégories par CA
+SELECT product_category_name_english AS categorie,
+       ROUND(SUM(revenue), 2) AS chiffre_affaires
 FROM orders_master
 WHERE product_category_name_english IS NOT NULL
-GROUP BY category
-ORDER BY revenue DESC
+GROUP BY categorie
+ORDER BY chiffre_affaires DESC
 LIMIT 10;
 ```
 
@@ -196,70 +232,69 @@ LIMIT 10;
 ### Prérequis / Prerequisites
 - Python 3.11+
 - pip
+- `make` — Windows : `winget install GnuWin32.Make` | Mac/Linux : déjà installé
 - [Dataset Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — placer les CSV dans `data/raw/`
 
 ### Étapes / Steps
 
-1. Cloner le dépôt / Clone the repository
 ```bash
+# 1. Cloner le dépôt
 git clone https://github.com/PhilippeMARTINS/projet-pipeline-data.git
 cd projet-pipeline-data
-```
 
-2. Créer et activer l'environnement virtuel / Create and activate virtual environment
-```bash
+# 2. Créer et activer l'environnement virtuel
 python -m venv venv
-```
-```bash
-# Windows
-venv\Scripts\activate
-# Mac/Linux
-source venv/bin/activate
-```
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Mac/Linux
 
-3. Installer les dépendances / Install dependencies
-```bash
+# 3. Installer les dépendances
 pip install -r requirements.txt
-```
 
-4. Lancer l'application / Run the application
-```bash
+# 4. Configurer les variables d'environnement
+cp .env.example .env         # puis adapter si nécessaire
+
+# 5. Lancer le pipeline ETL complet
+python main.py
+
+# 6. Lancer le dashboard
 streamlit run app.py
 ```
 
+### Commandes Makefile
+
+```bash
+make install    # Installe les dépendances
+make run        # Lance le pipeline ETL
+make dashboard  # Lance le dashboard Streamlit
+make test       # Lance les tests pytest
+make clean      # Nettoie les fichiers temporaires
+```
+
 > ⚠️ Ne jamais copier le dossier `venv/` d'un PC à l'autre — toujours le recréer localement.
-> Never copy the `venv/` folder from one PC to another — always recreate it locally.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Outil / Tool | Usage |
-|------|-------|
-| **Python 3.11** | Langage principal / Core language |
+| Outil | Usage |
+|-------|-------|
+| **Python 3.11** | Langage principal |
 | **Pandas 2.2** | Manipulation & nettoyage des données |
 | **SQLite** | Stockage relationnel & requêtes analytiques |
-| **Matplotlib 3.8** | Génération de graphiques |
+| **Matplotlib 3.8** | Génération des graphiques statiques (outputs/) |
 | **Seaborn 0.13** | Visualisation statistique |
+| **Plotly** | Graphiques interactifs du dashboard |
 | **Streamlit 1.32** | Dashboard interactif |
-
----
-
-## 📁 Dataset
-
-[Olist Brazilian E-Commerce Public Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) — Kaggle  
-~100 000 commandes | 9 tables relationnelles | 2016–2018
-
-> ⚠️ Les fichiers CSV bruts sont exclus du dépôt (`.gitignore`). Les télécharger depuis Kaggle et les placer dans `data/raw/`.
+| **pytest** | Tests unitaires |
 
 ---
 
 ## 👤 Auteur / Author
 
-**Philippe Morais Martins** — Data Engineer / Scientist  
-M2 Data Engineering · Paris Ynov Campus  
+**Philippe Morais Martins** — Data Engineer / Scientist
+M2 Data Engineering · Paris Ynov Campus
 Anglais courant · Portugais bilingue
 
-📧 philippe.martins@hotmail.com  
-🔗 [LinkedIn](https://linkedin.com/in/) ← *(à compléter)*  
+📧 philippe.martins@hotmail.com
+🔗 [LinkedIn](https://www.linkedin.com/in/philippe-morais-martins/)
 💻 [GitHub](https://github.com/PhilippeMARTINS)
